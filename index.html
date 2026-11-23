@@ -1,4 +1,31 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}[hidden]{display:none!important}</style><style>.auditnote{font-size:13px;max-height:180px;overflow:auto}.auditnote p{margin:8px 0}.evidence{font-size:13px;margin-top:6px}.evidence li{margin:8px 0}.evidence a{float:none;margin:0}.reviewstatus{font-size:12px;color:var(--muted)}#industrySummary{max-height:125px;overflow:auto;font-size:13px}.industry-row{display:flex;gap:7px;align-items:center;width:100%;border:0;background:none;color:var(--ink);padding:3px 0;text-align:left;cursor:pointer}.industry-row i{width:10px;height:10px;border-radius:50%;flex:none}.industry-row b{margin-left:auto}.head{max-height:65vh;overflow:auto}label{font-size:12px}.chip{font-size:12px}</style></head><body><title>Kaplan Collection Business Map</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}[hidden]{display:none!important}</style><style>.auditnote{font-size:13px;max-height:180px;overflow:auto}.auditnote p{margin:8px 0}.evidence{font-size:13px;margin-top:6px}.evidence li{margin:8px 0}.evidence a{float:none;margin:0}.reviewstatus{font-size:12px;color:var(--muted)}#industrySummary{max-height:125px;overflow:auto;font-size:13px}.industry-row{display:flex;gap:7px;align-items:center;width:100%;border:0;background:none;color:var(--ink);padding:3px 0;text-align:left;cursor:pointer}.industry-row i{width:10px;height:10px;border-radius:50%;flex:none}.industry-row b{margin-left:auto}.head{max-height:65vh;overflow:auto}label{font-size:12px}.chip{font-size:12px}</style><style>
+.mobile-nav {display:none}
+.review-tools {display:grid;gap:8px;margin:8px 0}
+.review-tools button {justify-self:start}
+.auditnote {max-height:none;overflow:visible}
+.auditnote summary,.evidence summary {cursor:pointer}
+@media (min-width:761px) {
+ .app {grid-template-columns:clamp(340px, 28vw, 460px) minmax(0,1fr);height:100dvh}
+ .head {max-height:56dvh;gap:8px}
+}
+@media (max-width:760px) {
+ html,body {height:auto;min-height:100%}
+ .mobile-nav {display:flex;position:sticky;top:0;z-index:1100;box-sizing:border-box;align-items:center;justify-content:space-between;gap:8px;background:var(--panel);color:var(--ink);padding:8px 10px;border-bottom:1px solid var(--line);height:62px}
+ .mobile-nav strong {font-size:14px;line-height:1.15}
+ .mobile-nav nav {display:flex;gap:4px;flex-shrink:0}
+ .mobile-nav button,.review-tools button {min-height:44px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit}
+ .mobile-nav button[aria-pressed=true] {background:#244362;color:#fff}
+ .app {display:block;position:relative;height:auto}
+ .app #map {width:100%;height:calc(100dvh - 62px)}
+ .app[data-panel=map] aside {display:none}
+ .app[data-panel=browse] #map {visibility:hidden;position:absolute;top:0;left:0;pointer-events:none}
+ .head,.list {max-height:none;overflow:visible}
+ .listhead {scroll-margin-top:62px}
+ #lh {scroll-margin-top:70px}
+ .filters input,.filters select {font-size:16px;min-height:44px}
+ .place,.prec,.atlas-views button {min-height:44px}
+}
+</style></head><body><title>Kaplan Collection Business Map</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -86,8 +113,15 @@ button.prec:hover { border-color: var(--dot); color: var(--dot); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
-<div class="app">
-  <aside>
+<header class="mobile-nav">
+  <strong>Kaplan Business Atlas</strong>
+  <nav aria-label="Atlas panels">
+    <button type="button" id="mobileMap" aria-controls="map" aria-pressed="true">Map</button>
+    <button type="button" id="mobileBrowse" aria-controls="atlasBrowse" aria-pressed="false">Browse &amp; filter</button>
+  </nav>
+</header>
+<div class="app" data-panel="map">
+  <aside id="atlasBrowse" aria-label="Browse the atlas">
     <div class="head">
       <div>
         <h1>Jewish Businesses in the Kaplan Collection</h1>
@@ -209,7 +243,7 @@ function draw() {
       const on = sel && ((sel.type === 'place' && sel.i === i) || (sel.type === 'addr' && A[sel.i][4] === i));
       L.circleMarker([P[i][0], P[i][1]], { renderer, radius: 3 + Math.sqrt(n) * 1.6, color: stroke, weight: 1, fillColor: on ? hi : dominantColor('place', i), fillOpacity: 0.78 })
         .bindTooltip(`<b>${esc(P[i][2])}</b><br>${n.toLocaleString()} item${n > 1 ? 's' : ''}${industryTooltip('place',i)}`, { direction: 'top' })
-        .on('click', () => select({ type: 'place', i }, 'city')).addTo(dots);
+        .on('click', () => openMapResult({ type: 'place', i }, 'city')).addTo(dots);
     });
   } else {
     // items in each city with no street location: dashed ring at the city centre
@@ -217,14 +251,14 @@ function draw() {
       const on = sel && sel.type === 'place' && sel.i === i;
       L.circleMarker([P[i][0], P[i][1]], { renderer, radius: 9 + Math.sqrt(n), color: on ? hi : css('--muted'), weight: 1.5, dashArray: '3 3', fillColor: panel, fillOpacity: 0.55 })
         .bindTooltip(`<b>${esc(P[i][2])}</b><br>${n.toLocaleString()} item${n > 1 ? 's' : ''} located to the city only`, { direction: 'top' })
-        .on('click', () => select({ type: 'place', i })).addTo(dots);
+        .on('click', () => openMapResult({ type: 'place', i })).addTo(dots);
     });
     [...aCount].sort((a, b) => b[1] - a[1]).forEach(([i, n]) => {
       const a = A[i], on = sel && sel.type === 'addr' && sel.i === i, exact = a[3] === 0;
       L.circleMarker([a[0], a[1]], { renderer, radius: 4.5 + Math.sqrt(n) * 1.4, color: exact ? stroke : (on ? hi : dominantColor('addr',i)), weight: exact ? 1.2 : 2.2,
         fillColor: on ? hi : (exact ? dominantColor('addr',i) : panel), fillOpacity: exact ? 0.85 : 0.9 })
         .bindTooltip(`<b>${esc(a[2])}</b><br>${esc(P[a[4]][2])}<br>${n} item${n > 1 ? 's' : ''} · ${a[3]===2 ? 'modern address match; historical position unverified' : exact ? 'inherited house-number match; unverified' : 'inherited street match; unverified'}${industryTooltip('addr',i)}`, { direction: 'top' })
-        .on('click', () => select({ type: 'addr', i })).addTo(dots);
+        .on('click', () => openMapResult({ type: 'addr', i })).addTo(dots);
     });
   }
   $('legendTxt').innerHTML = street()
@@ -289,7 +323,7 @@ function renderList() {
 }
 $('list').addEventListener('click', e => {
   const b = e.target.closest('.place'); if (b) return select({ type: 'place', i: +b.dataset.i }, true);
-  const a = e.target.closest('[data-a]'); if (a) return select({ type: 'addr', i: +a.dataset.a }, true);
+  const a = e.target.closest('[data-a]'); if (a) { showMobilePanel('map'); return select({ type: 'addr', i: +a.dataset.a }, true); }
   if (e.target.id === 'zoomCity' && sel) return map.flyTo([P[sel.i][0], P[sel.i][1]], 13, { duration: 0.6 });
   if (e.target.id === 'moreBtn') { shown += 100; renderList(); }
 });
@@ -344,11 +378,11 @@ function auditHTML(r){
   return '<li><strong>'+esc(c.address)+'</strong>'+(c.city?' · '+esc(c.city):'')+'<br>'+esc(state)+(c.role&&c.role!=='unassigned'?' · '+esc(c.role):' · address role unassigned')+'<br><span class="reviewstatus">'+esc(src)+'</span>'+(c.existing_matches?.length?'':'<br><span class="reviewstatus">No street coordinate assigned</span>')+(c.coordinate_note?'<p>'+esc(c.coordinate_note)+'</p>':'')+(c.image_urls?.length?'<br>'+c.image_urls.map((u,j)=>'<a target="_blank" rel="noopener" href="'+esc(u)+'">Scan '+(j+1)+'</a>').join(' · '):'')+'<details><summary>Evidence</summary>'+c.evidence.map(t=>'<p>'+esc(t)+'</p>').join('')+'</details></li>';
  }).join('');
  const verified = a.candidates.filter(c => c.status === 'image_text_verified');
- const highlights = verified.length ? '<ul class="verified-list">' + verified.map(c => {
+ const highlights = $('review').value === 'image' && verified.length ? '<ul class="verified-list">' + verified.map(c => {
    const source = c.image_urls?.[0];
    return '<li><strong>' + esc(c.address) + '</strong>' + (c.city ? '<span>' + esc(c.city) + '</span>' : '') + (source ? '<a target="_blank" rel="noopener" href="' + esc(source) + '">View scan</a>' : '') + '</li>';
  }).join('') + '</ul>' : '';
- return highlights + '<div class="reviewstatus">' + esc(a.id)+' · '+esc(statuses[a.imageStatus]||a.imageStatus)+(a.sourceRow?' · source record '+a.sourceRow:' · source linkage unresolved')+'</div><div>'+a.sectors.map(s=>'<span class="chip" style="border-left:4px solid '+SECTOR_COLORS[s]+'">'+esc(s)+'</span>').join(' ')+'</div><details class="evidence"><summary>All address evidence ('+a.candidates.length+' candidates)</summary>'+notes+(a.rawAddress?'<p><b>AddressAI, as supplied:</b> '+esc(a.rawAddress)+'</p>':'')+(candidates?'<ul>'+candidates+'</ul>':'<p>No address pattern extracted. This does not establish that the images have no address.</p>')+'<details><summary>Original description</summary><p style="white-space:pre-wrap">'+esc(a.description||'No matched source description')+'</p></details></details>';
+ return highlights + '<div hidden>' + esc(a.id)+' · '+esc(statuses[a.imageStatus]||a.imageStatus)+(a.sourceRow?' · source record '+a.sourceRow:' · source linkage unresolved')+'</div><div>'+a.sectors.map(s=>'<span class="chip" style="border-left:4px solid '+SECTOR_COLORS[s]+'">'+esc(s)+'</span>').join(' ')+'</div><details class="evidence"><summary>Address evidence ('+a.candidates.length+')</summary><p class="reviewstatus">'+esc(statuses[a.imageStatus]||a.imageStatus)+'</p>'+notes+(a.rawAddress?'<p><b>AddressAI, as supplied:</b> '+esc(a.rawAddress)+'</p>':'')+(candidates?'<ul>'+candidates+'</ul>':'<p>No address pattern extracted. This does not establish that the images have no address.</p>')+'<details><summary>Original description</summary><p style="white-space:pre-wrap">'+esc(a.description||'No matched source description')+'</p></details></details>';
 }
 $('exportAudit').onclick=()=>{
  const table=[['record_id','source_record','person','business','date','industries','address','city','role','address_status','sources','image_review_status','evidence','item_url','image_urls']];
@@ -361,16 +395,24 @@ const filters = document.querySelector('.filters');
 const quick = document.createElement('nav');
 quick.className = 'atlas-views';
 quick.setAttribute('aria-label', 'Atlas views');
-quick.innerHTML = '<button type="button" id="explorePlaces">Explore places</button><button type="button" id="verifiedAddresses">Verified addresses</button>';
+quick.innerHTML = '<button type="button" id="explorePlaces">Explore places</button>';
 filters.before(quick);
 
 const additional = document.createElement('details');
 additional.className = 'atlas-more';
 additional.innerHTML = '<summary>More filters</summary><div class="filters"></div>';
-for (const id of ['genre', 'trade', 'scope', 'review', 'view', 'y0', 'y1']) {
+for (const id of ['genre', 'trade', 'scope', 'view', 'y0', 'y1']) {
   additional.lastElementChild.append($(id).closest('label'));
 }
 filters.after(additional);
+
+const reviewPanel = document.querySelector('.auditnote');
+reviewPanel.firstElementChild.textContent = 'Address review · In progress';
+const reviewTools = document.createElement('div');
+reviewTools.className = 'review-tools';
+reviewTools.innerHTML = '<p>Explore addresses checked against scans or find candidates awaiting review.</p><button type="button" id="verifiedAddresses">Verified addresses</button>';
+reviewTools.append($('review').closest('label'));
+reviewPanel.firstElementChild.after(reviewTools);
 
 const industries = document.createElement('details');
 industries.className = 'atlas-more';
@@ -387,6 +429,7 @@ function setAtlasView(verified) {
     $('y0').value = '';
     $('y1').value = '';
     apply();
+    if (isCompact.matches) $('lh').scrollIntoView({block:'start'});
   }
   $('list').scrollTop = 0;
 }
@@ -431,6 +474,27 @@ keyStyle.textContent = `
 .atlas-color-key-body li span { flex: 0 0 10px; height: 10px; border-radius: 50%; background: var(--swatch); outline: 1px solid var(--line); }
 `;
 document.head.append(keyStyle);
+
+const isCompact = matchMedia('(max-width: 760px)');
+const atlasLayout = document.querySelector('.app');
+function showMobilePanel(panel) {
+  if (!isCompact.matches) return;
+  atlasLayout.dataset.panel = panel;
+  $('mobileMap').setAttribute('aria-pressed', String(panel === 'map'));
+  $('mobileBrowse').setAttribute('aria-pressed', String(panel === 'browse'));
+  window.scrollTo(0, 0);
+  if (panel === 'map') map.invalidateSize({pan: false});
+}
+function openMapResult(selection, fly) {
+  select(selection, fly);
+  if (isCompact.matches) {
+    showMobilePanel('browse');
+    $('lh').scrollIntoView({block: 'start'});
+  }
+}
+$('mobileMap').onclick = () => showMobilePanel('map');
+$('mobileBrowse').onclick = () => showMobilePanel('browse');
+isCompact.addEventListener('change', () => map.invalidateSize({pan: false}));
 
 apply();
 </script>
