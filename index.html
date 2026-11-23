@@ -33,6 +33,11 @@
 .location-industries p { margin: 6px 0; }
 .location-industries .industry-row { gap: 8px; min-height: 30px; }
 @media (max-width:760px) { .location-industries .industry-row { min-height: 44px; } }
+</style><style>
+.leaflet-streetBasemap-pane { filter: saturate(.65); }
+.leaflet-control-layers { color: var(--ink); background: var(--panel); }
+.leaflet-control-layers label { min-height: 36px; display: flex; align-items: center; text-transform: none; letter-spacing: normal; }
+.leaflet-control-layers input { width: auto; }
 </style></head><body><title>Kaplan Collection Business Map</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -196,15 +201,33 @@ const tradeMatch = (r, v) => !v || (v[0] === 'c' ? r[5].some(i => T[i][0] === v.
 const map = L.map('map', { preferCanvas: true, worldCopyJump: true, minZoom: 2, maxZoom: 18, zoomSnap: 0.5 }).setView([39.5, -88], 4);
 map.attributionControl.setPrefix('');
 const renderer = L.canvas({ padding: 0.5 });
-let tiles = null, labels = null, worldLayer = null, stateLayer = null;
+let quietTiles = null, worldLayer = null, stateLayer = null;
 const esri = s => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/${s}/MapServer/tile/{z}/{y}/{x}`;
 const tileUrl = () => esri(isDark() ? 'World_Dark_Gray_Base' : 'World_Light_Gray_Base');
 const labelUrl = () => esri(isDark() ? 'World_Dark_Gray_Reference' : 'World_Light_Gray_Reference');
 if (TILES) {
-  map.setMaxZoom(16);
-  tiles = L.tileLayer(tileUrl(), { maxZoom: 16, attribution: 'Basemap: Esri, HERE, Garmin, © OpenStreetMap contributors' }).addTo(map);
-  map.createPane('labels'); map.getPane('labels').style.zIndex = 450; map.getPane('labels').style.pointerEvents = 'none';
-  labels = L.tileLayer(labelUrl(), { maxZoom: 16, pane: 'labels' }).addTo(map);
+  map.setMaxZoom(19);
+  map.createPane('streetBasemap').style.zIndex = 200;
+  const streetTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    pane: 'streetBasemap',
+    maxZoom: 19,
+    updateWhenIdle: true,
+    attribution: 'Basemap © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+  }).addTo(map);
+  const quietBase = L.tileLayer(tileUrl(), {
+    maxNativeZoom: 16,
+    maxZoom: 19,
+    attribution: 'Basemap: Esri, HERE, Garmin, © OpenStreetMap contributors',
+  });
+  map.createPane('labels');
+  map.getPane('labels').style.zIndex = 450;
+  map.getPane('labels').style.pointerEvents = 'none';
+  const quietLabels = L.tileLayer(labelUrl(), { maxNativeZoom: 16, maxZoom: 19, pane: 'labels' });
+  quietTiles = { base: quietBase, labels: quietLabels };
+  L.control.layers({
+    'Street map': streetTiles,
+    'Quiet map': L.layerGroup([quietBase, quietLabels]),
+  }, null, { position: 'topright' }).addTo(map);
 } else {
   map.attributionControl.addAttribution('Boundaries: Natural Earth');
   const st = baseStyle();
@@ -358,7 +381,7 @@ legend.onAdd = () => { const d = L.DomUtil.create('div', 'legend'); d.id = 'lege
 legend.addTo(map);
 
 function restyle() {
-  if (tiles) { tiles.setUrl(tileUrl()); labels.setUrl(labelUrl()); }
+  if (quietTiles) { quietTiles.base.setUrl(tileUrl()); quietTiles.labels.setUrl(labelUrl()); }
   else { const s = baseStyle(); worldLayer.setStyle(s.world); stateLayer.setStyle(s.states); }
   draw();
 }
