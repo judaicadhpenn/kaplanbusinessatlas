@@ -153,7 +153,7 @@ button.prec:hover { border-color: var(--dot); color: var(--dot); }
         <label for="sector">Industry <select id="sector"><option value="">All industries</option></select></label><label for="scope">Scope <select id="scope"><option value="commercial">Commercial material</option><option value="all">All original map items</option></select></label><label for="review">Address review <select id="review"><option value="">All statuses</option><option value="multiple">Multiple addresses</option><option value="pending">Unmapped candidates</option><option value="image">Checked against scans</option><option value="unreviewed">Images not reviewed</option></select></label><label for="view">Browse <select id="view"><option value="places">Places</option><option value="records">Items and addresses</option></select></label><label for="y0">From year <input id="y0" type="number" inputmode="numeric" placeholder="1801" value="1801"></label>
         <label for="y1">To year <input id="y1" type="number" inputmode="numeric" placeholder="1900" value="1900"></label>
       </div>
-      <div class="stats-row"><div class="stats" aria-live="polite"><span class="fig"><b id="nRec">0</b> items</span><span class="fig"><b id="nPl">0</b> places</span><span class="fig"><b id="nAd">0</b> with a street</span></div><button class="link" id="reset" type="button">Clear all filters</button></div>
+      <div class="stats-row"><div class="stats" aria-live="polite"><span class="fig"><b id="nRec">0</b> items</span><span class="fig"><b id="nPl">0</b> places</span><span class="fig"><b id="nAd">0</b> with a street</span></div><div class="stats-actions"><button class="chart-btn" id="openCharts" type="button">View charts</button><button class="link" id="reset" type="button">Clear all filters</button></div></div>
     <details class="auditnote"><summary>Coverage and interpretation</summary><p>Address audit in progress. All 16,770 source records were scanned for address patterns in six text fields. Pattern extraction can miss unusual addresses. OCR was attempted for 8,963 items (20,768 page entries); only selected pages have been visually checked. Unreviewed records remain explicitly marked.</p><p>Dots count collection items, not unique firms or the Jewish business population. A record can have several industries and locations. Industry categories are provisional groupings of recorded trades. City associations and existing coordinates are inherited from the supplied map and may need correction. Modern address matches do not establish historical locations.</p><p>Names use OBJECTS_CUSTOMFIELD_5l. No Jewish identity is inferred from names. A listed person is not automatically the owner of every business on an item.</p><button id="exportAudit" type="button">Download current address review CSV</button></details><div id="industrySummary"></div></div>
     <div class="listhead"><h2 id="lh">Places by number of items</h2><button class="link" id="back" type="button" hidden>← All places</button></div>
     <div class="list" id="list"></div>
@@ -325,6 +325,103 @@ label.check input { width: 17px; height: 17px; margin: 0; flex: none; accent-col
 .key.sel { border: 2px solid var(--dot-sel); background: transparent; }
 .location-industries > p.reviewstatus { margin: 6px 0 0; }
 
+/* Shared chart pieces */
+.chart-tip { position: absolute; z-index: 1300; pointer-events: none; background: var(--panel); color: var(--ink); border: 1px solid var(--rule); border-radius: 2px; box-shadow: 2px 2px 0 rgba(42,31,22,.15); padding: 6px 9px; font-size: 12.5px; line-height: 1.45; white-space: nowrap; }
+.chart-tip b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.chart-tip span, .chart-tip em { color: var(--muted); font-style: normal; }
+.tip-row { display: flex; align-items: center; gap: 6px; color: var(--ink) !important; }
+.tip-row i { width: 12px; height: 2px; flex: none; }
+.tip-row em { margin-left: auto; padding-left: 10px; }
+
+/* Timeline */
+.timeline { position: relative; background: var(--panel); border: 1px solid var(--rule); outline: 1px solid var(--rule); outline-offset: 3px; box-shadow: 0 0 0 4px var(--panel); padding: 8px 10px 6px; box-sizing: border-box; font-family: var(--body); color: var(--ink); }
+.leaflet-bottom.leaflet-right .timeline { margin-bottom: 30px; }
+.tl-head { display: flex; align-items: baseline; gap: 10px; font-size: 13px; }
+.tl-title { font-family: var(--display); font-weight: 600; font-size: 13.5px; }
+.tl-sel { font-variant-numeric: tabular-nums; color: var(--muted); }
+.tl-head .link { margin-left: auto; font-size: 12.5px; }
+#tlSvg { display: block; width: 100%; cursor: crosshair; touch-action: none; margin-top: 4px; }
+.tl-grid { stroke: var(--line); stroke-width: 1; }
+.tl-base { stroke: var(--rule); stroke-width: 1; }
+.tl-axis { font-size: 10.5px; fill: var(--muted); font-family: var(--body); }
+.tl-cap { font-size: 10px; fill: var(--ink); font-weight: 600; font-family: var(--body); }
+.tl-break { stroke: var(--panel); stroke-width: 2; }
+.tl-band { fill: color-mix(in srgb, var(--accent) 9%, transparent); stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 2; }
+.tl-drag { fill: color-mix(in srgb, var(--accent) 16%, transparent); stroke: var(--accent); stroke-width: 1; pointer-events: none; }
+.tl-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.tl-keys { display: inline-flex; align-items: center; gap: 5px; }
+.tl-keys i { display: inline-block; width: 9px; height: 9px; margin-left: 4px; }
+.timeline .chart-tip { top: -34px; }
+
+/* Place profile */
+.profile { margin: 0 14px 10px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 2px; display: grid; gap: 10px; }
+.profile .sum { padding: 0; }
+.profile .location-industries { margin: 0; }
+.pp-sec h3 { margin: 0 0 5px; font-family: var(--caps); font-weight: 400; font-size: 14px; letter-spacing: .04em; display: flex; justify-content: space-between; gap: 8px; }
+.pp-sec h3 span { font-family: var(--body); font-size: 12px; letter-spacing: 0; color: var(--muted); }
+.pp-svg { display: block; width: 100%; height: 44px; }
+.pp-dec:hover rect[style] { filter: brightness(1.12); }
+.pp-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 2px; font-variant-numeric: tabular-nums; }
+.pp-undated { margin: -6px 0 0; }
+.pp-bar { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 3px 0; font: inherit; font-size: 13px; color: var(--ink); text-align: left; cursor: pointer; }
+.pp-bar:hover .pp-name { color: var(--accent); }
+.pp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-track { height: 8px; background: color-mix(in srgb, var(--line) 50%, transparent); }
+.pp-track i { display: block; height: 100%; border-radius: 0 2px 2px 0; }
+.pp-bar b { font-family: var(--mono); font-weight: 400; font-size: 12px; color: var(--muted); min-width: 3ch; text-align: right; }
+.pp-more summary { cursor: pointer; font-size: 12.5px; color: var(--accent); padding: 3px 0; }
+
+/* Charts button and panel */
+.stats-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.chart-btn { font-family: var(--caps); font-size: 14px; letter-spacing: .04em; background: var(--panel); color: var(--ink); border: 1.5px solid var(--rule); border-radius: 2px; padding: 5px 12px; cursor: pointer; }
+.chart-btn:hover { background: var(--rule); color: var(--panel); }
+.app { position: relative; }
+aside { grid-column: 1; grid-row: 1; }
+#map { grid-column: 2; grid-row: 1; }
+#chartsPanel { grid-column: 2; grid-row: 1; z-index: 1200; position: relative; overflow-y: auto; background: var(--bg) var(--paper); padding: 22px clamp(16px, 3vw, 36px) 40px; display: grid; gap: 18px; align-content: start; }
+#chartsPanel[hidden] { display: none !important; }
+.cp-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.cp-head h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 24px; }
+.cp-sub { margin: 2px 0 0; color: var(--muted); font-size: 13.5px; }
+.cp-close { font-family: var(--caps); font-size: 14px; letter-spacing: .04em; background: var(--rule); color: var(--panel); border: 0; border-radius: 2px; padding: 8px 14px; cursor: pointer; white-space: nowrap; }
+.cp-card { background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--rule); padding: 16px 18px 14px; min-width: 0; }
+.cp-card h3 { margin: 0 0 4px; font-family: var(--display); font-weight: 600; font-size: 18px; }
+.cp-note { margin: 0 0 10px; color: var(--muted); font-size: 13px; max-width: 70ch; }
+.cp-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 6px; }
+.cp-key { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 3px 0; font: inherit; font-size: 12.5px; color: var(--ink); cursor: pointer; }
+.cp-key:disabled { cursor: default; }
+.cp-key:not(:disabled):hover { color: var(--accent); }
+.cp-key i { width: 11px; height: 11px; border-radius: 2px; }
+.cp-key.dim { opacity: .45; }
+.cp-chart { width: 100%; min-height: 120px; }
+.cp-grid { stroke: var(--line); stroke-width: 1; }
+.cp-axis { font-size: 11px; fill: var(--muted); font-family: var(--body); }
+.cp-n { font-size: 10.5px; fill: var(--muted); font-family: var(--mono); }
+.cp-n.low { font-style: italic; opacity: .7; }
+.cp-seg { stroke: var(--panel); stroke-width: 1; }
+.cp-hit { cursor: default; }
+.cp-hit:hover { fill: color-mix(in srgb, var(--ink) 5%, transparent); }
+.cp-table summary { cursor: pointer; font-size: 13px; color: var(--accent); margin-top: 8px; }
+.cp-scroll { overflow-x: auto; }
+.cp-tbl { border-collapse: collapse; font-size: 12px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.cp-tbl th, .cp-tbl td { padding: 4px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.cp-tbl thead th { font-weight: 600; vertical-align: bottom; white-space: normal; min-width: 60px; }
+.cp-tbl tbody th { text-align: left; }
+.heat { border-collapse: separate; border-spacing: 2px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.heat thead th { font-weight: 500; color: var(--muted); font-size: 11.5px; padding: 2px 4px; text-align: center; }
+.heat thead th:first-child { text-align: left; }
+.heat tbody th { text-align: left; font-weight: 400; padding-right: 10px; white-space: nowrap; }
+.heat tbody th .link { font-size: 13px; text-decoration: none; color: var(--ink); }
+.heat tbody th .link:hover { color: var(--accent); text-decoration: underline; }
+.hc { min-width: 40px; text-align: center; padding: 5px 4px; border-radius: 2px; background: color-mix(in srgb, var(--accent) var(--lvl), var(--panel)); color: var(--ink); }
+.hc.dark { color: var(--accent-ink); }
+.hc.empty-cell { background: none; color: var(--line); }
+.hc-tot { text-align: right; padding-left: 10px; color: var(--muted); font-family: var(--mono); font-size: 12px; }
+.cp-ramp { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+.cp-ramp i { width: 120px; height: 8px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 6%, var(--panel)), var(--accent)); border: 1px solid var(--line); }
+.cp-foot { margin: 0; font-size: 12.5px; color: var(--muted); font-style: italic; }
+#cpTip { position: absolute; }
+
 /* Phone bar */
 @media (max-width: 760px) {
   .mobile-nav { background: var(--panel) var(--paper); border-bottom: 3px double var(--rule); }
@@ -334,6 +431,10 @@ label.check input { width: 17px; height: 17px; margin: 0; flex: none; accent-col
   .app { display: block; }
   .listhead { top: 62px; }
   .industry-row { min-height: 44px; }
+  .leaflet-bottom.leaflet-right .timeline { margin: 0 8px 26px; }
+  #chartsPanel { position: fixed; top: 62px; left: 0; right: 0; bottom: 0; padding: 16px; }
+  .cp-head h2 { font-size: 21px; }
+  .pp-bar { min-height: 40px; }
   label.check { min-height: 44px; }
   aside { border-right: 0; }
   #map::after { box-shadow: inset 0 0 0 4px var(--panel), inset 0 0 0 5px var(--rule), inset 0 0 40px rgba(70, 45, 15, .2); }
@@ -365,6 +466,13 @@ const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
 R.forEach((r,i) => { r.audit = AUDIT[i]; });
+// Undated "circa" cards were filed at the start of a 1875–1900 placeholder range; use the year written in the date instead.
+R.forEach(r => {
+  const t = r[3] || '';
+  r.approx = /circa|crica|cica|\bca\.|0'?s\b|\?/i.test(t);
+  const m = t.match(/(1[5-9]\d\d|20[0-2]\d)/);
+  if (r.approx && m) r[7] = +m[1];
+});
 R.forEach(r => r.hay = (r[0] + ' ' + r[1] + ' ' + r[2] + ' ' + r[11] + ' ' + r[12] + ' ' + r[5].map(i => T[i][1]).join(' ') + ' ' + r.audit.id + ' ' + r.audit.candidates.map(c=>c.address).join(' ')).toLowerCase());
 
 function fillSelect(el, col, min) {
@@ -446,9 +554,16 @@ function apply() {
   const q = $('q').value.trim().toLowerCase(), g = $('genre').value, t = $('trade').value;
   const y0 = parseInt($('y0').value) || -1e9, y1 = parseInt($('y1').value) || 1e9;
   const yearOn = $('y0').value || $('y1').value;
-  industryBase = R.filter(r => (!q || r.hay.includes(q)) && (!g || r[4] === g) && tradeMatch(r, t) && (!yearOn || (r[7] && r[7] >= y0 && r[7] <= y1)) && auditMatch(r, true));
   const chosenSector = $('sector').value;
-  filtered = chosenSector ? industryBase.filter(r => r.audit.sectors.includes(chosenSector)) : industryBase;
+  industryBase = []; timeBase = []; filtered = [];
+  for (const r of R) {
+    if (!((!q || r.hay.includes(q)) && (!g || r[4] === g) && tradeMatch(r, t) && auditMatch(r, true))) continue;
+    const inYears = !yearOn || (r[7] && r[7] >= y0 && r[7] <= y1);
+    const inSector = !chosenSector || r.audit.sectors.includes(chosenSector);
+    if (inYears) industryBase.push(r);   // industry picker counts
+    if (inSector) timeBase.push(r);      // timeline bars
+    if (inYears && inSector) filtered.push(r);
+  }
   pCount = new Map(); aCount = new Map(); pNoAddr = new Map();
   const inc = (m, k) => m.set(k, (m.get(k) || 0) + 1);
   filtered.forEach(r => {
@@ -461,7 +576,7 @@ function apply() {
   $('nRec').textContent = filtered.length.toLocaleString(); $('nPl').textContent = pCount.size.toLocaleString();
   $('nAd').textContent = nA.toLocaleString();
   if (sel && !(sel.type === 'place' ? pCount : aCount).has(sel.i)) sel = null;
-  draw(); shown = 60; renderList(); renderIndustrySummary();
+  draw(); shown = 60; renderList(); renderIndustrySummary(); renderTimeline(); renderCharts();
 }
 
 function draw() {
@@ -556,7 +671,7 @@ function renderList() {
     const withA = rs.filter(r => r[10].some(i => A[i][4] === sel.i)).length;
     sum = `<div class="sum">${withA.toLocaleString()} of ${rs.length.toLocaleString()} located to a street. <button class="link" id="zoomCity" type="button">Zoom to streets</button></div>`;
   }
-  list.innerHTML = sum + locationBreakdown(rs) + rs.slice(0, shown).map(recHTML).join('') + more(rs.length, 'items');
+  list.innerHTML = placeProfile(rs, sum) + rs.slice(0, shown).map(recHTML).join('') + more(rs.length, 'items');
 }
 $('list').addEventListener('click', e => {
   const industry = e.target.closest('[data-sector]');
@@ -586,7 +701,7 @@ function restyle() {
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', restyle);
 new MutationObserver(restyle).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 const industryCache = new Map();
-let industryBase = R;
+let industryBase = R, timeBase = R;
 Object.keys(SECTOR_COLORS).forEach(s=>$('sector').add(new Option(s,s)));
 function auditMatch(r, skipSector){
  const a=r.audit,s=$('sector').value,v=$('review').value;
@@ -756,6 +871,275 @@ function openMapResult(selection, fly) {
 $('mobileMap').onclick = () => showMobilePanel('map');
 $('mobileBrowse').onclick = () => showMobilePanel('browse');
 isCompact.addEventListener('change', () => map.invalidateSize({pan: false}));
+
+
+/* ---------- Charts: timeline, place profile, industries and cities by decade ---------- */
+
+// Seven largest industries get a colour-blind-tested palette (validated light and dark); the rest keep their colours.
+const CHART_INDUSTRIES = ['General retail & wholesale', 'Printing & books', 'Hardware & manufacturing', 'Finance & property', 'Jewelry & watches', 'Food & groceries', 'Textiles & clothing'];
+const LIGHT_STEPS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6'];
+const DARK_STEPS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#0ca30c', '#9085e9'];
+CHART_INDUSTRIES.forEach((name, i) => { SECTOR_COLORS[name] = LIGHT_STEPS[i]; });
+const sectorColor = name => {
+  const i = CHART_INDUSTRIES.indexOf(name);
+  return i >= 0 && isDark() ? DARK_STEPS[i] : (SECTOR_COLORS[name] || css('--overview-dot'));
+};
+const currentColor = () => $('sector').value ? sectorColor($('sector').value) : css('--overview-dot');
+const yearRange = () => { const a = parseInt($('y0').value), b = parseInt($('y1').value); return [isNaN(a) ? null : a, isNaN(b) ? null : b]; };
+const plural = (n, w) => `${n.toLocaleString()} ${w}${n === 1 ? '' : 's'}`;
+
+/* Timeline: items per year, drag to choose a range */
+const TL = { y0: 1750, y1: 1930 };
+const timeline = L.control({ position: 'bottomright' });
+timeline.onAdd = () => {
+  const d = L.DomUtil.create('div', 'timeline');
+  d.id = 'timeline';
+  L.DomEvent.disableClickPropagation(d);
+  L.DomEvent.disableScrollPropagation(d);
+  d.innerHTML = '<div class="tl-head"><span class="tl-title">Items by year</span><span class="tl-sel" id="tlSel"></span><button type="button" class="link" id="tlAll">All years</button></div>'
+    + '<svg id="tlSvg" role="img" aria-label="Bar chart of items by year. Drag across it to choose a date range."></svg>'
+    + '<div class="tl-foot" id="tlFoot"></div><div class="chart-tip" id="tlTip" hidden></div>';
+  return d;
+};
+timeline.addTo(map);
+let tlDrag = null;
+function sizeTimeline() {
+  const el = $('timeline'); if (!el) return;
+  const mapW = map.getContainer().clientWidth;
+  const legendW = isCompact.matches ? 0 : ($('legendTxt')?.offsetWidth || 0) + 40;
+  el.style.width = Math.max(260, Math.min(620, mapW - legendW - 40)) + 'px';
+}
+function renderTimeline() {
+  sizeTimeline();
+  const svg = $('tlSvg'); if (!svg) return;
+  const W = Math.max(200, svg.clientWidth), H = 72, base = H - 15;
+  const exact = new Map(), approx = new Map();
+  let undated = 0, early = 0, late = 0;
+  timeBase.forEach(r => {
+    const y = r[7];
+    if (!y) { undated++; return; }
+    if (y < TL.y0) { early++; return; }
+    if (y > TL.y1) { late++; return; }
+    const m = r.approx ? approx : exact; m.set(y, (m.get(y) || 0) + 1);
+  });
+  const n = TL.y1 - TL.y0 + 1, bw = W / n;
+  const totals = []; for (let y = TL.y0; y <= TL.y1; y++) totals.push((exact.get(y) || 0) + (approx.get(y) || 0));
+  const sorted = [...totals].sort((a, b) => b - a);
+  let cap = sorted[0] || 1;
+  if (sorted[1] && sorted[0] > sorted[1] * 2) cap = Math.ceil(sorted[1] * 1.3); // one outlier year would flatten the rest; clip it and label it
+  const [s0, s1] = yearRange();
+  const inSel = y => (s0 == null || y >= s0) && (s1 == null || y <= s1);
+  const col = currentColor();
+  const h = v => v ? Math.max(1.5, Math.min(v, cap) / cap * (base - 14)) : 0;
+  let out = '';
+  for (let y = TL.y0; y <= TL.y1; y++) if (y % 25 === 0) {
+    const x = (y - TL.y0) * bw;
+    out += `<line x1="${x}" x2="${x}" y1="0" y2="${base}" class="tl-grid"/><text x="${x}" y="${H - 3}" class="tl-axis" text-anchor="${x < 16 ? 'start' : x > W - 16 ? 'end' : 'middle'}">${y}</text>`;
+  }
+  if (s0 != null || s1 != null) {
+    const a = Math.max(TL.y0, s0 ?? TL.y0), b = Math.min(TL.y1, s1 ?? TL.y1);
+    if (b >= a) out += `<rect x="${(a - TL.y0) * bw}" y="0" width="${(b - a + 1) * bw}" height="${base}" class="tl-band"/>`;
+  }
+  for (let y = TL.y0; y <= TL.y1; y++) {
+    const e = exact.get(y) || 0, a = approx.get(y) || 0, t = e + a; if (!t) continue;
+    const x = (y - TL.y0) * bw + .5, w = Math.max(1, bw - 1), ht = h(t), he = h(e);
+    out += `<g style="opacity:${inSel(y) ? 1 : .3}">`
+      + (a ? `<rect x="${x}" y="${base - ht}" width="${w}" height="${ht - he}" style="fill:${col};opacity:.42"/>` : '')
+      + (e ? `<rect x="${x}" y="${base - he}" width="${w}" height="${he}" style="fill:${col}"/>` : '') + '</g>';
+    if (t > cap) out += `<path d="M${x - 2} 16 l${w + 4} -3 M${x - 2} 19 l${w + 4} -3" class="tl-break"/><text x="${Math.min(W - 18, Math.max(18, x + w / 2))}" y="9" class="tl-cap" text-anchor="middle">${t.toLocaleString()}</text>`;
+  }
+  out += `<line x1="0" x2="${W}" y1="${base}" y2="${base}" class="tl-base"/><rect id="tlDragRect" x="0" y="0" width="0" height="${base}" class="tl-drag"/>`;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('height', H); svg.innerHTML = out;
+  svg._tl = { W, bw, exact, approx };
+  $('tlSel').textContent = s0 == null && s1 == null ? 'All years' : `${s0 ?? 'earliest'}–${s1 ?? 'latest'}`;
+  $('tlAll').hidden = s0 == null && s1 == null;
+  const notes = [];
+  if (undated) notes.push(`${undated.toLocaleString()} undated${s0 != null || s1 != null ? ' (hidden while a range is set)' : ''}`);
+  if (early) notes.push(`${early.toLocaleString()} before ${TL.y0}`);
+  if (late) notes.push(`${late.toLocaleString()} after ${TL.y1}`);
+  $('tlFoot').innerHTML = `<span class="tl-keys"><i style="background:${col}"></i>Dated <i style="background:${col};opacity:.42"></i>Circa</span><span>${notes.join(' · ') || 'Drag across the bars to choose years'}</span>`;
+}
+const tlYear = e => {
+  const svg = $('tlSvg'), r = svg.getBoundingClientRect(), { W, bw } = svg._tl;
+  return Math.min(TL.y1, Math.max(TL.y0, TL.y0 + Math.floor((e.clientX - r.left) / r.width * W / bw)));
+};
+function showTlDrag() {
+  const { bw } = $('tlSvg')._tl, a = Math.min(tlDrag.a, tlDrag.b), b = Math.max(tlDrag.a, tlDrag.b), rect = $('tlDragRect');
+  rect.setAttribute('x', (a - TL.y0) * bw); rect.setAttribute('width', (b - a + 1) * bw);
+  $('tlSel').textContent = a === b ? String(a) : `${a}–${b}`;
+}
+$('tlSvg').addEventListener('pointerdown', e => {
+  tlDrag = { a: tlYear(e), b: tlYear(e) }; e.currentTarget.setPointerCapture(e.pointerId); showTlDrag(); $('tlTip').hidden = true;
+});
+$('tlSvg').addEventListener('pointermove', e => {
+  if (tlDrag) { tlDrag.b = tlYear(e); showTlDrag(); return; }
+  const y = tlYear(e), { exact, approx } = $('tlSvg')._tl, ex = exact.get(y) || 0, ap = approx.get(y) || 0, tip = $('tlTip');
+  tip.innerHTML = `<b>${(ex + ap).toLocaleString()}</b> ${ex + ap === 1 ? 'item' : 'items'} in ${y}${ap ? `<br><span>${ap.toLocaleString()} dated circa</span>` : ''}`;
+  const box = $('timeline').getBoundingClientRect();
+  tip.hidden = false;
+  tip.style.left = Math.min(box.width - tip.offsetWidth - 4, Math.max(4, e.clientX - box.left - tip.offsetWidth / 2)) + 'px';
+});
+$('tlSvg').addEventListener('pointerleave', () => { $('tlTip').hidden = true; });
+$('tlSvg').addEventListener('pointerup', () => {
+  if (!tlDrag) return;
+  const a = Math.min(tlDrag.a, tlDrag.b), b = Math.max(tlDrag.a, tlDrag.b);
+  tlDrag = null; $('y0').value = a; $('y1').value = b; apply();
+});
+$('tlAll').onclick = () => { $('y0').value = ''; $('y1').value = ''; apply(); };
+
+/* Place profile: decades and top industries for the selected place or address */
+function decadeCounts(rs) {
+  const m = new Map();
+  rs.forEach(r => { if (!r[7]) return; const d = Math.floor(r[7] / 10) * 10, o = m.get(d) || { e: 0, a: 0 }; r.approx ? o.a++ : o.e++; m.set(d, o); });
+  return m;
+}
+function placeProfile(rs, extra) {
+  const dc = decadeCounts(rs), ds = [...dc.keys()].sort((a, b) => a - b), col = currentColor();
+  let decades = '';
+  if (ds.length) {
+    const d0 = Math.max(ds[0], 1700), d1 = Math.min(ds[ds.length - 1], 1940), n = (d1 - d0) / 10 + 1, W = 300, base = 44;
+    const max = Math.max(1, ...[...dc.entries()].filter(([d]) => d >= d0 && d <= d1).map(([, o]) => o.e + o.a));
+    let bars = '';
+    for (let i = 0; i < n; i++) {
+      const d = d0 + i * 10, o = dc.get(d); if (!o) continue;
+      const t = o.e + o.a, bw = W / n, x = i * bw + bw * .12, w = bw * .76, ht = Math.max(2, t / max * base), he = o.e ? Math.max(1, o.e / max * base) : 0;
+      bars += `<g class="pp-dec"><title>${d}s: ${plural(t, 'item')}${o.a ? `, ${o.a.toLocaleString()} circa` : ''}</title><rect x="${x - bw * .12}" y="0" width="${bw}" height="${base}" fill="transparent"/>`
+        + (o.a ? `<rect x="${x}" y="${base - ht}" width="${w}" height="${ht - he}" style="fill:${col};opacity:.42"/>` : '')
+        + (he ? `<rect x="${x}" y="${base - he}" width="${w}" height="${he}" style="fill:${col}"/>` : '') + '</g>';
+    }
+    const peak = [...dc.entries()].sort((a, b) => (b[1].e + b[1].a) - (a[1].e + a[1].a))[0];
+    decades = `<div class="pp-sec"><h3>Items by decade <span>busiest: ${peak[0]}s</span></h3><svg class="pp-svg" viewBox="0 0 ${W} ${base}" preserveAspectRatio="none" role="img" aria-label="Items by decade, ${d0}s to ${d1}s">${bars}</svg><div class="pp-axis"><span>${d0}s</span><span>${d1}s</span></div></div>`;
+  }
+  const undated = rs.filter(r => !r[7]).length;
+  const sector = $('sector').value;
+  let inds;
+  if (sector) inds = locationBreakdown(rs);
+  else {
+    const entries = industryCounts(rs), max = entries.length ? entries[0][1] : 1;
+    const row = ([name, c]) => `<button type="button" class="pp-bar" data-sector="${esc(name)}" title="Show only ${esc(name)}"><span class="pp-name">${esc(name)}</span><span class="pp-track"><i style="width:${Math.max(3, c / max * 100)}%;background:${sectorColor(name)}"></i></span><b>${c.toLocaleString()}</b></button>`;
+    inds = entries.length ? `<div class="pp-sec"><h3>Top industries</h3>${entries.slice(0, 5).map(row).join('')}`
+      + (entries.length > 5 ? `<details class="pp-more"><summary>${entries.length - 5} more</summary>${entries.slice(5).map(row).join('')}</details>` : '')
+      + (entries.length > 1 ? industryCountNote : '') + '</div>' : '';
+  }
+  return `<div class="profile">${extra}${decades}${undated ? `<p class="reviewstatus pp-undated">${plural(undated, 'undated item')} not shown by decade</p>` : ''}${inds}</div>`;
+}
+
+/* Charts panel */
+const panel = document.createElement('section');
+panel.id = 'chartsPanel'; panel.hidden = true; panel.setAttribute('aria-label', 'Charts');
+panel.innerHTML = `<header class="cp-head"><div><h2>Charts</h2><p class="cp-sub" id="cpSub"></p></div><button type="button" class="cp-close" id="closeCharts">Back to map</button></header>
+<article class="cp-card"><h3>Industries by decade</h3>
+<p class="cp-note">Each bar shows how a decade's items split across industries. An item tagged with two industries counts in both. Faded bars have fewer than 20 items, so their shares are less reliable. This chart always shows every industry; the one you picked is highlighted. Click a colour to show only that industry.</p>
+<div class="cp-legend" id="indLegend"></div><div class="cp-chart" id="indChart"></div>
+<details class="cp-table"><summary>Show as table</summary><div class="cp-scroll" id="indTable"></div></details></article>
+<article class="cp-card"><h3>Leading cities by decade</h3>
+<p class="cp-note">The 12 places with the most items under your current filters. Numbers are items. Darker cells mark a larger share of that decade's items, so you can see cities rise and fall. Click a city to open it.</p>
+<div class="cp-scroll" id="cityChart"></div><div class="cp-ramp"><span>Smaller share</span><i></i><span>Larger share</span></div></article>
+<p class="cp-foot">Circa dates are counted at their stated year (for example "1885 circa" counts as 1885). Undated items are left out of both charts.</p>
+<div class="chart-tip" id="cpTip" hidden></div>`;
+document.querySelector('.app').append(panel);
+
+function decadesOf(rs) {
+  let lo = Infinity, hi = -Infinity;
+  rs.forEach(r => { if (r[7]) { lo = Math.min(lo, r[7]); hi = Math.max(hi, r[7]); } });
+  if (lo === Infinity) return [];
+  const out = []; for (let d = Math.max(Math.floor(lo / 10) * 10, 1700); d <= Math.min(Math.floor(hi / 10) * 10, 1940); d += 10) out.push(d);
+  return out;
+}
+function showTip(e, html) {
+  const tip = $('cpTip'), box = panel.getBoundingClientRect();
+  tip.innerHTML = html; tip.hidden = false;
+  tip.style.left = Math.min(box.width - tip.offsetWidth - 8, e.clientX - box.left + 14) + 'px';
+  tip.style.top = (e.clientY - box.top + panel.scrollTop + 14) + 'px';
+}
+function renderIndustryChart() {
+  const ds = decadesOf(industryBase), keys = [...CHART_INDUSTRIES, 'Other'], idx = new Map(ds.map((d, i) => [d, i]));
+  const data = ds.map(d => ({ d, n: 0, tags: 0, seg: Object.fromEntries(keys.map(k => [k, 0])) }));
+  industryBase.forEach(r => {
+    if (!r[7]) return; const o = data[idx.get(Math.floor(r[7] / 10) * 10)]; if (!o) return;
+    o.n++; r.audit.sectors.forEach(s => { o.seg[CHART_INDUSTRIES.includes(s) ? s : 'Other']++; o.tags++; });
+  });
+  const sector = $('sector').value, focus = sector ? (CHART_INDUSTRIES.includes(sector) ? sector : 'Other') : null;
+  const colorOf = k => k === 'Other' ? css('--muted') : sectorColor(k);
+  $('indLegend').innerHTML = keys.map(k => `<button type="button" class="cp-key${focus && focus !== k ? ' dim' : ''}" ${k === 'Other' ? 'disabled title="Every other industry, plus unclassified and noncommercial items"' : `data-sector="${esc(k)}"`}><i style="background:${colorOf(k)}"></i>${k === 'Other' ? 'Everything else' : esc(k)}</button>`).join('');
+  const box = $('indChart'), W = Math.max(320, box.clientWidth), H = 280, ml = 38, mb = 26, mt = 18, ph = H - mb - mt;
+  if (!ds.length) { box.innerHTML = '<p class="empty">No dated items match these filters.</p>'; $('indTable').innerHTML = ''; return; }
+  const slot = (W - ml) / ds.length, bw = Math.min(46, slot * .74);
+  let svg = '';
+  [0, .25, .5, .75, 1].forEach(p => { const y = mt + ph * (1 - p); svg += `<line x1="${ml}" x2="${W}" y1="${y}" y2="${y}" class="cp-grid"/><text x="${ml - 6}" y="${y + 4}" class="cp-axis" text-anchor="end">${p * 100}%</text>`; });
+  const every = Math.ceil(28 / slot);
+  data.forEach((o, i) => {
+    const x = ml + i * slot + (slot - bw) / 2;
+    if (o.tags) {
+      let y = mt + ph;
+      keys.forEach(k => {
+        const v = o.seg[k]; if (!v) return; const hgt = v / o.tags * ph; y -= hgt;
+        svg += `<rect x="${x}" y="${y}" width="${bw}" height="${Math.max(0, hgt)}" class="cp-seg" style="fill:${colorOf(k)};opacity:${(o.n < 20 ? .45 : 1) * (focus && focus !== k ? .28 : 1)}"/>`;
+      });
+      svg += `<text x="${x + bw / 2}" y="${mt - 5}" class="cp-n${o.n < 20 ? ' low' : ''}" text-anchor="middle">${o.n >= 1000 ? (o.n / 1000).toFixed(1).replace('.0', '') + 'k' : o.n}</text>`;
+    }
+    if (i % every === 0) svg += `<text x="${x + bw / 2}" y="${H - 8}" class="cp-axis" text-anchor="middle">${o.d}s</text>`;
+    svg += `<rect x="${ml + i * slot}" y="${mt}" width="${slot}" height="${ph}" fill="transparent" class="cp-hit" data-i="${i}"/>`;
+  });
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Stacked bar chart of industry shares by decade">${svg}</svg>`;
+  box._data = data;
+  $('indTable').innerHTML = `<table class="cp-tbl"><thead><tr><th>Decade</th><th>Items</th>${keys.map(k => `<th>${k === 'Other' ? 'Everything else' : esc(k)}</th>`).join('')}</tr></thead><tbody>`
+    + data.filter(o => o.n).map(o => `<tr><th>${o.d}s</th><td>${o.n.toLocaleString()}</td>${keys.map(k => `<td>${o.seg[k] ? o.seg[k].toLocaleString() : '–'}</td>`).join('')}</tr>`).join('') + '</tbody></table>';
+}
+$('indChart').addEventListener('pointermove', e => {
+  const hit = e.target.closest('.cp-hit'); if (!hit) { $('cpTip').hidden = true; return; }
+  const o = $('indChart')._data[+hit.dataset.i]; if (!o.n) { $('cpTip').hidden = true; return; }
+  const keys = [...CHART_INDUSTRIES, 'Other'].filter(k => o.seg[k]).sort((a, b) => o.seg[b] - o.seg[a]);
+  showTip(e, `<strong>${o.d}s</strong> · ${plural(o.n, 'item')}<br>` + keys.map(k => `<span class="tip-row"><i style="background:${k === 'Other' ? css('--muted') : sectorColor(k)}"></i><b>${Math.round(o.seg[k] / o.tags * 100)}%</b> ${k === 'Other' ? 'Everything else' : esc(k)} <em>${o.seg[k].toLocaleString()}</em></span>`).join(''));
+});
+$('indChart').addEventListener('pointerleave', () => { $('cpTip').hidden = true; });
+$('indLegend').addEventListener('click', e => { const b = e.target.closest('[data-sector]'); if (b) filterToIndustry($('sector').value === b.dataset.sector ? '' : b.dataset.sector); });
+
+function renderCityChart() {
+  const ds = decadesOf(filtered), idx = new Map(ds.map((d, i) => [d, i]));
+  const tot = new Map(), cell = new Map(), decTot = ds.map(() => 0);
+  filtered.forEach(r => {
+    if (!r[7]) return; const i = idx.get(Math.floor(r[7] / 10) * 10); if (i == null) return;
+    decTot[i]++;
+    r[8].forEach(p => { tot.set(p, (tot.get(p) || 0) + 1); const k = p + ':' + i; cell.set(k, (cell.get(k) || 0) + 1); });
+  });
+  const top = [...tot].sort((a, b) => b[1] - a[1]).slice(0, 12);
+  if (!top.length) { $('cityChart').innerHTML = '<p class="empty">No dated items match these filters.</p>'; return; }
+  const ranks = ds.map((d, i) => { const list = [...cell].filter(([k]) => k.endsWith(':' + i)).sort((a, b) => b[1] - a[1]); return new Map(list.map(([k], r) => [k, r + 1])); });
+  let maxShare = 0;
+  top.forEach(([p]) => ds.forEach((d, i) => { const c = cell.get(p + ':' + i) || 0; if (decTot[i] >= 10) maxShare = Math.max(maxShare, c / decTot[i]); }));
+  const rows = top.map(([p, t]) => `<tr><th><button type="button" class="link" data-place="${p}">${esc(P[p][2].replace(/, United States$/, ''))}</button></th>`
+    + ds.map((d, i) => {
+      const c = cell.get(p + ':' + i) || 0; if (!c) return '<td class="hc empty-cell">·</td>';
+      const share = c / decTot[i], lvl = Math.round(Math.min(1, share / (maxShare || 1)) * 100);
+      return `<td class="hc${lvl > 55 ? ' dark' : ''}" style="--lvl:${lvl}%" data-tip="${esc(P[p][2])}|${d}|${c}|${Math.round(share * 100)}|${ranks[i].get(p + ':' + i)}">${c.toLocaleString()}</td>`;
+    }).join('') + `<td class="hc-tot">${t.toLocaleString()}</td></tr>`).join('');
+  $('cityChart').innerHTML = `<table class="heat"><thead><tr><th>Place</th>${ds.map(d => `<th>${d}s</th>`).join('')}<th>All</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+$('cityChart').addEventListener('pointermove', e => {
+  const c = e.target.closest('[data-tip]'); if (!c) { $('cpTip').hidden = true; return; }
+  const [name, d, n, pct, rank] = c.dataset.tip.split('|');
+  showTip(e, `<strong>${esc(name)}</strong> · ${d}s<br><b>${(+n).toLocaleString()}</b> items, <b>${pct}%</b> of the decade<br><span>Ranked #${rank} that decade</span>`);
+});
+$('cityChart').addEventListener('pointerleave', () => { $('cpTip').hidden = true; });
+$('cityChart').addEventListener('click', e => {
+  const b = e.target.closest('[data-place]'); if (!b) return;
+  panel.hidden = true; openMapResult({ type: 'place', i: +b.dataset.place }, true);
+});
+function renderCharts() {
+  if (panel.hidden) return;
+  const [s0, s1] = yearRange();
+  $('cpSub').textContent = `${plural(filtered.length, 'item')} · ${s0 == null && s1 == null ? 'all years' : `${s0 ?? 'earliest'}–${s1 ?? 'latest'}`} · ${$('sector').value || 'all industries'}${$('q').value.trim() ? ` · search “${$('q').value.trim()}”` : ''}`;
+  renderIndustryChart(); renderCityChart();
+}
+function openCharts() { panel.hidden = false; panel.scrollTop = 0; if (isCompact.matches) window.scrollTo(0, 0); renderCharts(); $('closeCharts').focus(); }
+$('openCharts').onclick = openCharts;
+$('closeCharts').onclick = () => { panel.hidden = true; $('openCharts').focus(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !panel.hidden) { panel.hidden = true; $('openCharts').focus(); } });
+let chartResize;
+window.addEventListener('resize', () => { clearTimeout(chartResize); chartResize = setTimeout(() => { renderTimeline(); renderCharts(); }, 150); });
+map.on('resize', () => renderTimeline());
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { renderTimeline(); renderCharts(); renderList(); });
 
 apply();
 </script>
