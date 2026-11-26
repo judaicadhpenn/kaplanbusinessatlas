@@ -619,7 +619,7 @@ function draw() {
       const a = A[i], on = sel && sel.type === 'addr' && sel.i === i, exact = a[3] === 0;
       L.circleMarker([a[0], a[1]], { renderer, radius: 4.5 + Math.sqrt(n) * 1.4, color: on ? hi : (exact ? stroke : dot), weight: on ? 3 : (exact ? 1.2 : 2.2),
         fillColor: exact ? dot : panel, fillOpacity: exact ? 0.85 : 0.9 })
-        .bindTooltip(`<b>${esc(a[2])}</b><br>${esc(P[a[4]][2])}<br>${n} item${n > 1 ? 's' : ''} · ${a[3]===2 ? 'modern address match; historical position unverified' : exact ? 'inherited house-number match; unverified' : 'inherited street match; unverified'}${industryTooltip('addr',i)}`, { direction: 'top' })
+        .bindTooltip(`<b>${esc(a[2])}</b><br>${esc(P[a[4]][2])}<br>${n} item${n > 1 ? 's' : ''} · ${a[3]===2 ? 'modern address match; historical position unverified' : exact ? 'house number from original map; unverified' : 'street only, from original map; unverified'}${industryTooltip('addr',i)}`, { direction: 'top' })
         .on('click', () => openMapResult({ type: 'addr', i })).addTo(dots);
     });
   }
@@ -645,7 +645,7 @@ function select(s, fly) {
 
 function locLine(r) {
   if (!r[10].length) return `<span class="prec city">No street coordinate assigned</span>`;
-  return r[10].map(i => `<button class="prec ${A[i][3] === 0 ? 'house' : 'street'}" type="button" data-a="${i}" title="Show on map">${A[i][3] === 2 ? 'Modern match' : A[i][3] === 0 ? 'Inherited number match' : 'Inherited street match'}: ${esc(A[i][2])}</button>`).join('');
+  return r[10].map(i => `<button class="prec ${A[i][3] === 0 ? 'house' : 'street'}" type="button" data-a="${i}" title="${A[i][3] === 2 ? 'Matched to a modern address; historical position unverified' : A[i][3] === 0 ? 'Placed at this house number on the original map; unverified' : 'Placed on this street on the original map; exact building unknown'}. Click to show on map.">${A[i][3] === 2 ? 'Modern address' : A[i][3] === 0 ? 'House number' : 'Street'}: ${esc(A[i][2])}</button>`).join('');
 }
 function histHTML(r) {
   const h = r.hist; if (!h) return '';
