@@ -1,7 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}[hidden]{display:none!important}</style><style>.auditnote{font-size:13px;max-height:180px;overflow:auto}.auditnote p{margin:8px 0}.evidence{font-size:13px;margin-top:6px}.evidence li{margin:8px 0}.evidence a{float:none;margin:0}.reviewstatus{font-size:12px;color:var(--muted)}#industrySummary{font-size:13px}.industry-row{display:flex;gap:7px;align-items:center;width:100%;border:0;background:none;color:var(--ink);padding:3px 0;text-align:left;cursor:pointer}.industry-row i{width:10px;height:10px;border-radius:50%;flex:none}.industry-row b{margin-left:auto}label{font-size:12px}.chip{font-size:12px}</style><style>
 .mobile-nav {display:none}
-.review-tools {display:grid;gap:8px;margin:8px 0}
-.review-tools button {justify-self:start}
 .auditnote {max-height:none;overflow:visible}
 .auditnote summary,.evidence summary {cursor:pointer}
 @media (min-width:761px) {
@@ -150,11 +148,11 @@ button.prec:hover { border-color: var(--dot); color: var(--dot); }
         </label>
         <label for="genre">Item type <select id="genre"><option value="">All types</option></select></label>
         <label for="trade">Original trade <select id="trade"><option value="">All trades</option></select></label>
-        <label for="sector">Industry <select id="sector"><option value="">All industries</option></select></label><label for="scope">Scope <select id="scope"><option value="commercial">Commercial material</option><option value="all">All original map items</option></select></label><label for="review">Address review <select id="review"><option value="">All statuses</option><option value="multiple">Multiple addresses</option><option value="pending">Unmapped candidates</option><option value="image">Checked against scans</option><option value="unreviewed">Images not reviewed</option></select></label><label for="view">Browse <select id="view"><option value="places">Places</option><option value="records">Items and addresses</option></select></label><label for="y0">From year <input id="y0" type="number" inputmode="numeric" placeholder="1801" value="1801"></label>
+        <label for="sector">Industry <select id="sector"><option value="">All industries</option></select></label><label for="scope">Scope <select id="scope"><option value="commercial">Commercial material</option><option value="all">All original map items</option></select></label><label for="view">Browse <select id="view"><option value="places">Places</option><option value="records">Items</option></select></label><label for="y0">From year <input id="y0" type="number" inputmode="numeric" placeholder="1801" value="1801"></label>
         <label for="y1">To year <input id="y1" type="number" inputmode="numeric" placeholder="1900" value="1900"></label>
       </div>
       <div class="stats-row"><div class="stats" aria-live="polite"><span class="fig"><b id="nRec">0</b> items</span><span class="fig"><b id="nPl">0</b> places</span><span class="fig"><b id="nAd">0</b> with a street</span></div><div class="stats-actions"><button class="chart-btn" id="openCharts" type="button">View charts</button><button class="link" id="reset" type="button">Clear all filters</button></div></div>
-    <details class="auditnote"><summary>Coverage and interpretation</summary><p>Address audit in progress. All 16,770 source records were scanned for address patterns in six text fields. Pattern extraction can miss unusual addresses. OCR was attempted for 8,963 items (20,768 page entries); only selected pages have been visually checked. Unreviewed records remain explicitly marked.</p><p>Dots count collection items, not unique firms or the Jewish business population. A record can have several industries and locations. Industry categories are provisional groupings of recorded trades. City associations and existing coordinates are inherited from the supplied map and may need correction. Modern address matches do not establish historical locations.</p><p>Names use OBJECTS_CUSTOMFIELD_5l. No Jewish identity is inferred from names. A listed person is not automatically the owner of every business on an item.</p><button id="exportAudit" type="button">Download current address review CSV</button></details><div id="industrySummary"></div></div>
+    <details class="auditnote"><summary>Coverage and interpretation</summary><p>Dots count collection items, not unique firms or the Jewish business population. A record can have several industries and locations. Industry categories are provisional groupings of recorded trades. City associations and existing coordinates are inherited from the supplied map and may need correction. Modern address matches do not establish historical locations.</p><p>Names use OBJECTS_CUSTOMFIELD_5l. No Jewish identity is inferred from names. A listed person is not automatically the owner of every business on an item.</p></details><div id="industrySummary"></div></div>
     <div class="listhead"><h2 id="lh">Places by number of items</h2><button class="link" id="back" type="button" hidden>← All places</button></div>
     <div class="list" id="list"></div>
   </aside>
@@ -227,8 +225,6 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .industry-row b { font-weight: 400; font-variant-numeric: tabular-nums lining-nums; }
 
 /* Buttons */
-#exportAudit, .review-tools button { font-family: var(--caps); font-size: 14px; letter-spacing: .04em; background: var(--panel); color: var(--ink); border: 1.5px solid var(--rule); border-radius: 2px; padding: 7px 12px; cursor: pointer; }
-#exportAudit:hover, .review-tools button:hover { background: var(--rule); color: var(--panel); }
 button.link { color: var(--accent); font-family: var(--body); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 button.link:hover { text-decoration-thickness: 2px; }
 
@@ -564,8 +560,6 @@ let shown = 60;
 const street = () => map.getZoom() >= STREET_ZOOM;
 
 function apply() {
-  $('verifiedOnly').checked = $('review').value === 'image';
-
   industryCache.clear();
   const q = $('q').value.trim().toLowerCase(), g = $('genre').value, t = $('trade').value;
   const y0 = parseInt($('y0').value) || -1e9, y1 = parseInt($('y1').value) || 1e9;
@@ -675,7 +669,7 @@ const more = (n, what) => n > shown ? `<div class="more"><button class="link" id
 
 function renderList() {
   const list = $('list');
-  if (!sel && $('view').value==='records') { $('lh').textContent='Items and address evidence'; $('back').hidden=true; list.innerHTML=filtered.slice(0,shown).map(recHTML).join('')+more(filtered.length,'items'); return; }
+  if (!sel && $('view').value==='records') { $('lh').textContent='Items'; $('back').hidden=true; list.innerHTML=filtered.slice(0,shown).map(recHTML).join('')+more(filtered.length,'items'); return; }
   if (!sel) {
     $('lh').textContent = 'Places by number of items'; $('back').hidden = true;
     const top = [...pCount].sort((a, b) => b[1] - a[1]);
@@ -711,8 +705,8 @@ $('list').addEventListener('click', e => {
 });
 $('back').onclick = () => select(null);
 let tmr; ['q', 'y0', 'y1'].forEach(id => $(id).addEventListener('input', () => { clearTimeout(tmr); tmr = setTimeout(apply, 180); }));
-['genre', 'trade', 'sector', 'scope', 'review', 'view'].forEach(id => $(id).addEventListener('change', apply));
-$('reset').onclick = () => { if ($('historyOnly')) $('historyOnly').checked = false; ['q','genre','trade','sector','review'].forEach(id=>$(id).value=''); $('y0').value='1801'; $('y1').value='1900'; $('scope').value='commercial'; $('view').value='places'; sel=null;apply(); };
+['genre', 'trade', 'sector', 'scope', 'view'].forEach(id => $(id).addEventListener('change', apply));
+$('reset').onclick = () => { if ($('historyOnly')) $('historyOnly').checked = false; ['q','genre','trade','sector'].forEach(id=>$(id).value=''); $('y0').value='1801'; $('y1').value='1900'; $('scope').value='commercial'; $('view').value='places'; sel=null;apply(); };
 
 let wasStreet = street();
 map.on('zoomend', () => { if (street() !== wasStreet) { wasStreet = street(); draw(); } });
@@ -732,14 +726,10 @@ const industryCache = new Map();
 let industryBase = R, timeBase = R;
 Object.keys(SECTOR_COLORS).forEach(s=>$('sector').add(new Option(s,s)));
 function auditMatch(r, skipSector){
- const a=r.audit,s=$('sector').value,v=$('review').value;
+ const a=r.audit,s=$('sector').value;
  if($('scope').value==='commercial'&&!a.commercial)return false;
  if(!skipSector&&s&&!a.sectors.includes(s))return false;
  if($('historyOnly')?.checked&&!r.hist)return false;
- if(v==='multiple'&&Math.max(r[10].length,a.candidates.filter(c=>c.status!=='superseded_by_image').length)<2)return false;
- if(v==='pending'&&!a.candidates.some(c=>!c.existing_matches?.length&&c.status!=='superseded_by_image'))return false;
- if(v==='image'&&!a.candidates.some(c=>c.status==='image_text_verified'))return false;
- if(v==='unreviewed'&&!['not_reviewed','ocr_complete_unverified','no_link_in_source','partial','error'].includes(a.imageStatus))return false;
  return true;
 }
 function industryCounts(rs){const counts=new Map();rs.forEach(r=>r.audit.sectors.forEach(s=>counts.set(s,(counts.get(s)||0)+1)));return [...counts].sort((a,b)=>b[1]-a[1]);}
@@ -777,34 +767,12 @@ $('industrySummary').onclick = event => {
   const button = event.target.closest('[data-sector]');
   if (button) filterToIndustry(button.dataset.sector);
 };
-const statuses={not_reviewed:'Images not reviewed',no_link_in_source:'No image link supplied',ocr_complete_unverified:'OCR processed; visual review pending',selected_pages_visually_reviewed:'Selected image pages visually reviewed',partial:'Image processing incomplete',error:'Image access failed'};
 function auditHTML(r){
  const a=r.audit;
- const notes=a.notes.map(n=>'<p>'+esc(n)+'</p>').join('');
- const candidates=a.candidates.map(c=>{
-  const state=c.status==='image_text_verified'?'Address text verified in image':c.status==='superseded_by_image'?'Superseded — transcription error':c.status==='unparsed_address_field'?'Original address field — parsing needed':'Extracted candidate — unverified';
-  const src=c.sources.join(', ');
-  return '<li><strong>'+esc(c.address)+'</strong>'+(c.city?' · '+esc(c.city):'')+'<br>'+esc(state)+(c.role&&c.role!=='unassigned'?' · '+esc(c.role):' · address role unassigned')+'<br><span class="reviewstatus">'+esc(src)+'</span>'+(c.existing_matches?.length?'':'<br><span class="reviewstatus">No street coordinate assigned</span>')+(c.coordinate_note?'<p>'+esc(c.coordinate_note)+'</p>':'')+(c.image_urls?.length?'<br>'+c.image_urls.map((u,j)=>'<a target="_blank" rel="noopener" href="'+esc(u)+'">Scan '+(j+1)+'</a>').join(' · '):'')+'<details><summary>Evidence</summary>'+c.evidence.map(t=>'<p>'+esc(t)+'</p>').join('')+'</details></li>';
- }).join('');
- const verified = a.candidates.filter(c => c.status === 'image_text_verified');
- const highlights = $('review').value === 'image' && verified.length ? '<ul class="verified-list">' + verified.map(c => {
-   const source = c.image_urls?.[0];
-   return '<li><strong>' + esc(c.address) + '</strong>' + (c.city ? '<span>' + esc(c.city) + '</span>' : '') + (source ? '<a target="_blank" rel="noopener" href="' + esc(source) + '">View scan</a>' : '') + '</li>';
- }).join('') + '</ul>' : '';
- return highlights + '<div hidden>' + esc(a.id)+' · '+esc(statuses[a.imageStatus]||a.imageStatus)+(a.sourceRow?' · source record '+a.sourceRow:' · source linkage unresolved')+'</div>'+(a.sectors.length?'<div class="rec-ind">'+a.sectors.map(s=>'<span><i aria-hidden="true" style="background:'+SECTOR_COLORS[s]+'"></i>'+esc(s)+'</span>').join('')+'</div>':'')+'<details class="evidence"><summary>Address evidence ('+a.candidates.length+')</summary><p class="reviewstatus">'+esc(statuses[a.imageStatus]||a.imageStatus)+'</p>'+notes+(a.rawAddress?'<p><b>AddressAI, as supplied:</b> '+esc(a.rawAddress)+'</p>':'')+(candidates?'<ul>'+candidates+'</ul>':'<p>No address pattern extracted. This does not establish that the images have no address.</p>')+'<details><summary>Original description</summary><p style="white-space:pre-wrap">'+esc(a.description||'No matched source description')+'</p></details></details>';
+ return a.sectors.length?'<div class="rec-ind">'+a.sectors.map(s=>'<span><i aria-hidden="true" style="background:'+SECTOR_COLORS[s]+'"></i>'+esc(s)+'</span>').join('')+'</div>':'';
 }
-$('exportAudit').onclick=()=>{
- const table=[['record_id','source_record','person','business','date','industries','address','city','role','address_status','sources','image_review_status','evidence','item_url','image_urls']];
- filtered.forEach(r=>{const a=r.audit;const candidates=a.candidates.length?a.candidates:[{address:'',sources:[],evidence:[],status:'no_pattern_extracted'}];candidates.forEach(c=>table.push([a.id,a.sourceRow,r[0],r[1],r[3],a.sectors.join(' | '),c.address,c.city||'',c.role||'unassigned',c.status,c.sources.join(' | '),a.imageStatus,c.evidence.join(' | '),r[6],(c.image_urls||[]).join(' | ')]));});
- const csv='\uFEFF'+table.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
- const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const link=document.createElement('a');link.href=url;link.download='filtered-address-review.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-};
 
 const filters = document.querySelector('.filters');
-const verifiedToggle = document.createElement('label');
-verifiedToggle.className = 'check full';
-verifiedToggle.innerHTML = '<input type="checkbox" id="verifiedOnly"><span>Only addresses checked against scans</span>';
-filters.append(verifiedToggle);
 const historyToggle = document.createElement('label');
 historyToggle.className = 'check full';
 historyToggle.innerHTML = '<input type="checkbox" id="historyOnly"><span>Only items with a business history</span>';
@@ -818,13 +786,7 @@ for (const id of ['genre', 'trade', 'scope', 'view', 'y0', 'y1']) {
 }
 filters.after(additional);
 
-const reviewPanel = document.querySelector('.auditnote');
-reviewPanel.firstElementChild.textContent = 'Address review · In progress';
-const reviewTools = document.createElement('div');
-reviewTools.className = 'review-tools';
-reviewTools.innerHTML = '<p>Filter items by where their address review stands.</p>';
-reviewTools.append($('review').closest('label'));
-reviewPanel.firstElementChild.after(reviewTools);
+const notesPanel = document.querySelector('.auditnote');
 
 const industries = document.createElement('details');
 industries.className = 'industry-picker';
@@ -834,14 +796,7 @@ industries.append($('industrySummary'));
 { const sectorLabel = $('sector').closest('label'); sectorLabel.replaceWith(industries); sectorLabel.hidden = true; industries.append(sectorLabel); } // the hidden select still holds the chosen industry
 industries.classList.add('full');
 
-// Checked: show items with scan-checked addresses as a list, so the verified addresses are visible
 $('historyOnly').onchange = () => { sel = null; apply(); };
-$('verifiedOnly').onchange = e => {
-  $('review').value = e.target.checked ? 'image' : '';
-  $('view').value = e.target.checked ? 'records' : 'places';
-  sel = null;
-  apply();
-};
 
 const interfaceStyle = document.createElement('style');
 interfaceStyle.textContent = `
@@ -851,9 +806,6 @@ interfaceStyle.textContent = `
 .atlas-more { margin:6px 0; font-size:13px; }
 .atlas-more summary { cursor:pointer; font-weight:650; padding:4px 0; }
 .atlas-more .filters { margin-top:6px; }
-.verified-list { list-style:none; padding:0; margin:6px 0; }
-.verified-list li { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 8px; border-left:3px solid #28816e; padding:5px 8px; margin-bottom:4px; background:#e8f5f1; color:#183f36; }
-.verified-list a { color:#125446; text-decoration:underline; margin-left:auto; font-weight:650; }
 `;
 document.head.append(interfaceStyle);
 
@@ -882,7 +834,7 @@ keyStyle.textContent = `
 `;
 document.head.append(keyStyle);
 
-document.querySelector('.head').append(reviewPanel);
+document.querySelector('.head').append(notesPanel);
 document.body.append($('periodTheme')); // last in document order so it wins the cascade
 
 const isCompact = matchMedia('(max-width: 760px)');
